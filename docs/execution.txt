@@ -1,0 +1,19 @@
+wait   <---------------------------------------------------------------------------<-------------< request nothing,execute commands
+|                                                                                                    ^                           ^ 
+|---->Receive stop                                                (RETURN)<--------------------<--- Process Exited? ----------> No 
+            |                                                        ^                         ^^----^->request reset-->|  |
+            |-----> Uncaught signal -> -------------------------> Request Exit <---------------)---- |->request restart>|  v
+			|                                                         ^                        |  |->|->request exit--->| Yes
+			|-----> Process Exits ---> custom handler? -> NO ---------|                        |  |  |------------------)--<
+            |                                ^        Y               |                        |  |                     |
+            |                                |        |---------------)--------->Custom handler)->|                     | 
+            |                                |                        |                        |  |                     |
+            |-----> Signal-- Trap? -->Yes ---)->breakpoint -Y> Execute breakpoint commands     |  |                     |                     
+                               |             |       |                |      |                 |  |                     |
+                               v             |       NO             Handle interp requests ----)->|                     |
+                              No------------>^       |                |                        |                        |
+                               |             |       v                |<----------------<      |                        |
+                               |             |     Trap on exit Y? --->execute commands>^      |                        |
+                              Regular        |<------N                                          ------------------------ 
+                              Signal ------->|
+                              

@@ -1,0 +1,21 @@
+{
+	"image":"dummy",
+	"arguments":["dummy"],
+	"processes":1,
+	"textAt":0x600,
+	"stdin":{"type":"DATA","data":""},
+	"stdout":"out.temp",
+	"stderr":"/dev/null",
+	"commands":["$i=U8(1);"],
+	"breakpoints":[
+	{
+		"address":0x70e,
+		"commands":[
+			"if($i>5)",
+				"CLOSEIN();",
+			"else",
+				"{$i=U8($i+1);STDIN('X');}"
+		]
+	}	
+	]
+}

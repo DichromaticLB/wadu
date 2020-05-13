@@ -1,0 +1,83 @@
+#!/bin/bash
+
+artest(){
+if [[  $(./wadu -e 'PRINT('"$1"',"stdout");' 2>&1) != "$2" ]]; then
+	echo 'PRINT('"$1"',"stdout");' 
+	fatal "$3"
+else
+	suc "$3"
+fi
+
+}
+
+artest "2+2+2  "             "0000000000000006"        "basic arithmetics 1"
+artest "3-2*2  "             "ffffffffffffffff"        "basic arithmetics 2"
+artest "(2+2)*3"             "000000000000000c"        "basic arithmetics 3"
+artest "12*12%7"             "0000000000000004"        "basic arithmetics 4"
+artest "0xeffe&0xf00f "      "000000000000e00e"        "basic arithmetics 5"
+artest "(0xffff^0x5555)"     "000000000000aaaa"        "basic arithmetics 6"
+artest "18/3   "             "0000000000000006"        "basic arithmetics 7"
+artest "256/4/2"             "0000000000000020"        "basic arithmetics 8"
+artest "1<<63"               "8000000000000000"        "basic arithmetics 9"
+artest "1<<63>>63"           "0000000000000001"        "basic arithmetics 10"
+artest "12*12&11*11"         "0000000000000010"        "basic arithmetics 11"
+artest "12*(12&11)*11"       "0000000000000420"        "basic arithmetics 12"
+artest "(12*(12&11)*11)<<24" "0000000420000000"        "basic arithmetics 13"
+
+artest "U32(2+2+2  )"              "00000006"          "32 casts 1"
+artest "U32(3-2*2  )"              "ffffffff"          "32 casts 2"
+artest "U32((2+2)*3)"              "0000000c"          "32 casts 3"
+artest "U32(12*12%7)"              "00000004"          "32 casts 4"
+artest "U32(0xeffe&0xf00f )"       "0000e00e"          "32 casts 5"
+artest "U32((0xffff^0x5555))"      "0000aaaa"          "32 casts 6"
+artest "U32(18/3   )"              "00000006"          "32 casts 7"
+artest "U32(256/4/2)"              "00000020"          "32 casts 8"
+artest "U32(1<<63)"                "00000000"          "32 casts 9"
+artest "U32(1<<63>>63)"            "00000001"          "32 casts 10"
+artest "U32(12*12&11*11)"          "00000010"          "32 casts 11"
+artest "U32(12*(12&11)*11)"        "00000420"          "32 casts 12"
+artest "U32((12*(12&11)*11)<<24)"  "20000000"          "32 casts 13"
+
+artest "U16(2+2+2  )"              "0006"          "16 casts 1"
+artest "U16(3-2*2  )"              "ffff"          "16 casts 2"
+artest "U16((2+2)*3)"              "000c"          "16 casts 3"
+artest "U16(12*12%7)"              "0004"          "16 casts 4"
+artest "U16(0xeffe&0xf00f )"       "e00e"          "16 casts 5"
+artest "U16((0xffff^0x5555))"      "aaaa"          "16 casts 6"
+artest "U16(18/3   )"              "0006"          "16 casts 7"
+artest "U16(256/4/2)"              "0020"          "16 casts 8"
+artest "U16(1<<63)"                "0000"          "16 casts 9"
+artest "U16(1<<63>>63)"            "0001"          "16 casts 10"
+artest "U16(12*12&11*11)"          "0010"          "16 casts 11"
+artest "U16(12*(12&11)*11)"        "0420"          "16 casts 12"
+artest "U16((12*(12&11)*11)<<24)"  "0000"          "16 casts 13"
+
+artest "U8(2+2+2  )"                "06"          "8 casts 1"
+artest "U8(3-2*2  )"                "ff"          "8 casts 2"
+artest "U8((2+2)*3)"                "0c"          "8 casts 3"
+artest "U8(12*12%7)"                "04"          "8 casts 4"
+artest "U8(0xeffe&0xf00f )"         "0e"          "8 casts 5"
+artest "U8((0xffff^0x5555))"        "aa"          "8 casts 6"
+artest "U8(18/3   )"                "06"          "8 casts 7"
+artest "U8(256/4/2)"                "20"          "8 casts 8"
+artest "U8(1<<63)"                  "00"          "8 casts 9"
+artest "U8(1<<63>>63)"              "01"          "8 casts 10"
+artest "U8(12*12&11*11)"            "10"          "8 casts 11"
+artest "U8(12*(12&11)*11)"          "20"          "8 casts 12"
+artest "U8((12*(12&11)*11)<<24)"    "00"          "8 casts 13"
+
+artest "1<1"                    "00"          "comparation 1"
+artest "1<=1"                   "01"          "comparation 2"
+artest "1>1"                    "00"          "comparation 3"
+artest "1>=1"                   "01"          "comparation 4"
+artest "1==1"                   "01"          "comparation 5"
+artest "1!=1"                   "00"          "comparation 6"
+artest "123&&421" "0000000000000001"		  "comparation 7"
+artest "123&&0"   "0000000000000000"		  "comparation 8"
+artest "0&&123"   "0000000000000000"		  "comparation 9"
+artest "123||0"   "0000000000000001"		  "comparation 10"
+artest "0||123"   "0000000000000001"		  "comparation 11"
+
+artest "0x0[3]"   					      "00"		  "indexing 1"
+artest "'t'.VECTOR('aeiou'[1]).'st'"      "test"	  "indexing 2"
+artest "'t'.VECTOR('aeiou'[1,2]).'st'"    "tiost"	  "indexing 3"

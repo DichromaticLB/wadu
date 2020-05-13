@@ -1,0 +1,24 @@
+{
+	"image":"dummy",
+	"arguments":["dummy"],
+	"processes":1,
+	"textAt":0x600,
+	"stdin":{"type":"DATA","data":"-"},
+	"stdout":{"type":"PARENT_OUT"},
+	"stderr":"/dev/null",
+	"commands":[],
+	"breakpoints":[
+		{
+			"address":0x7d0,
+			"commands":[
+				"AMEMWRITE($$rbp-4,U32(3));"
+			]
+		},
+		{
+			"address":0x81c,
+			"commands":[
+				"$$rip=$$rip+0x835-0x81c;"
+			]
+		}
+	]
+}

@@ -1,0 +1,19 @@
+{
+	"image":"dummy",
+	"arguments":["dummy"],
+	"processes":1,
+	"heartbeat":true,
+	"textAt":0x600,
+	"stdin":{"type":"DATA","data":"\\x41aaaaX-"},
+	"stdout":{"type":"PARENT_OUT"},
+	"stderr":"/dev/null",
+	"commands":[],
+	"breakpoints":[
+	{
+		"address":0x817,
+		"commands":[
+			"$$rip=$$rip+30; /*Skip to main epilogue*/"
+		]
+	}	
+	]
+}

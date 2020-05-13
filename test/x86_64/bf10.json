@@ -1,0 +1,18 @@
+{
+	"image":"dummy",
+	"arguments":["dummy"],
+	"processes":1,
+	"textAt":0x600,
+	"stdin":{"type":"DATA","data":""},
+	"stdout":{"type":"PARENT_OUT"},
+	"stderr":"/dev/null",
+	"commands":[],
+	"breakpoints":[
+	{
+		"address":0x817,
+		"commands":[
+			"CLOSEIN();"
+		]
+	}	
+	]
+}

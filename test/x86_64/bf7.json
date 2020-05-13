@@ -1,0 +1,18 @@
+{
+	"image":"dummy",
+	"arguments":["dummy"],
+	"processes":1,
+	"textAt":0x600,
+	"stdin":{"type":"DATA","data":"aA09FX-"},
+	"stdout":"out.temp",
+	"stderr":"/dev/null",
+	"commands":[],
+	"breakpoints":[
+	{
+		"address":0x817,
+		"commands":[
+			"MEMWRITE(0x8c0,MAPFROM('replace'));"
+		]
+	}
+	]
+}

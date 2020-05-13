@@ -1,0 +1,14 @@
+{
+	"image":"dummy",
+	"arguments":["dummy"],
+	"processes":1,
+	"textAt":0x600,
+	"stdin":{"type":"DATA","data":"--"},
+	"stdout":"/dev/null",
+	"stderr":"/dev/null",
+	"traceOptions":["stopOnExit"],
+	"onexit":{
+		"commands":["PRINT(MEMREAD(0x8c8,0x10).'');"]
+	},
+	"breakpoints":[]
+}

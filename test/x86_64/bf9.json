@@ -1,0 +1,37 @@
+{
+	"image":"dummy",
+	"arguments":["dummy"],
+	"processes":1,
+	"textAt":0x600,
+	"stdin":{"type":"DATA","data":"AAAAAAAAAAAAAAAA-"},
+	"stdout":"out.temp",
+	"stderr":"/dev/null",
+	"commands":[],
+	"breakpoints":[
+		{
+			"address":0x817,
+			"commands":[
+				"$$rip=$$rip+0x82c-0x817;"
+			]
+		},
+		{
+			"address":0x713,
+			"commands":[
+				"if($$rax==U64('A'))",
+					"$$rax='X';"
+			]
+		},
+		{
+			"address":0x784,
+			"commands":[
+				"DISABLEBREAK(0x713);"
+			]
+		},	
+		{
+			"address":0x73c,
+			"commands":[
+				"ENABLEBREAK(0x713);"
+			]
+		}		
+	]
+}

@@ -1,0 +1,20 @@
+{
+	"image":"heartbeat",
+	"arguments":["heartbeat"],
+	"processes":1,
+	"textAt":0x610,
+	"stdin":{"type":"DATA","data":""},
+	"stdout":{"type":"PARENT_OUT"},
+	"stderr":"/dev/null",
+	"signals":[],
+	"commands":[],
+	"traceOptions":["killonexit"],
+	"breakpoints":[
+		{
+		"address":0x722,
+		"commands":[
+			"REQUEST(DETACH);"
+			]
+		}
+	]
+}

@@ -1,0 +1,26 @@
+{
+	"image":"dummy",
+	"arguments":["dummy"],
+	"processes":1,
+	"textAt":0x600,
+	"stdin":{"type":"DATA","data":"AAAA-"},
+	"stdout":"out.temp",
+	"stderr":"/dev/null",
+	"commands":["$i=U8(0);"],
+	"breakpoints":[
+	{
+		"address":0x713,
+		"commands":[
+			"if($i<2){",
+				"$$eax=0x39;",
+				"$i=U8($i+1);}"
+		]
+	},
+	{
+		"address":0x817,
+		"commands":[
+			"$$rip=$$rip+(0x82c-0x817);"
+		]
+	}
+	]
+}

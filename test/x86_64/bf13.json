@@ -1,0 +1,31 @@
+{
+	"image":"dummy",
+	"arguments":["dummy"],
+	"processes":1,
+	"textAt":0x600,
+	"stdin":{"type":"DATA","data":"--"},
+	"stdout":"/dev/null",
+	"stderr":"/dev/null",
+	"commands":[],
+	"onexit":{},
+	"signals":[{
+			"signal":11,
+			"commands":["MEMWRITE(0x821,$backup);"],
+			"action":"none"
+			}],
+	"breakpoints":[
+		{
+			"address":0x817,
+			"commands":[
+				"$backup=VECTOR(MEMREAD(0x821,0x40));",
+				"MEMWRITE(0x821,PATTERN('A',0x40));"
+			]
+		},
+		{
+			"address":0x83b,
+			"commands":[
+				"PRINT('managed to'.' finish');"
+			]
+		}	
+	]
+}

@@ -1,0 +1,41 @@
+{
+	"image":"poly",
+	"arguments":["poly"],
+	"processes":1,
+	"textAt":0x120,
+	"stdin":{"type":"DATA","data":"--"},
+	"stdout":{"type":"PARENT_OUT"},
+	"stderr":"/dev/null",
+	"signals":[
+		{
+			"signal":11,
+			"commands":["PRINT($$rip);"],
+			"action":"none"
+		},
+		{
+			"signal":5,
+			"commands":["PRINT($$rip);"],
+			"action":"none"
+		}
+	],
+	"breakpoints":[
+		{
+		"address":0x282,
+		"commands":[
+			"$$rsp=$$rsp-8;",
+			"AMEMWRITE($$rsp,$$rip);",
+			"$$rdi=0x4002f0;",
+			"$$rip=0x400220;",
+			"DISABLEBREAK();",
+			"ENABLEBREAK(0x240);"
+			]
+		},
+		{
+		"address":0x240,
+		"commands":["AMEMWRITE($$rsi,'IT\\'S  ');"],
+		"enabled":false	
+		}
+
+
+	]
+}

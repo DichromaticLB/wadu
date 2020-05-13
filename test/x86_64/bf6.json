@@ -1,0 +1,24 @@
+{
+	"image":"dummy",
+	"arguments":["dummy"],
+	"processes":1,
+	"textAt":0x600,
+	"stdin":{"type":"DATA","data":"-"},
+	"stdout":{"type":"PARENT_OUT"},
+	"stderr":"/dev/null",
+	"commands":[],
+	"breakpoints":[
+	{
+		"address":0x70a,
+		"commands":[
+			"$$rip=$$rip+0x7f5-0x70a;"
+		]
+	},
+		{
+		"address":0x80d,
+		"commands":[
+			"$$rax=0;"
+		]
+	}
+	]
+}
