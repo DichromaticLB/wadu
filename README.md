@@ -83,9 +83,11 @@ Breakpoints and commands to execute
 
 The standard input, output and error of the process can be manipulated with the options mentioned above
 
+```
 "<standard stream>": mode
-  mode: "string" // Referes to the file to read/write 
+mode: "string" // Referes to the file to read/write 
         | '{' "type" ':' "<mode>"  [, options ] '}'
+```
 
 ```
 "stdin":{"type":"DATA","data":"SOME TEXT"}
