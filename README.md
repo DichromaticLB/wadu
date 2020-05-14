@@ -714,5 +714,10 @@ GETC();
 |RESET|Spawns a new process, keeps nothing  | 
 |DETACH|Detach the process and leave it running, ideal if you just want to do some monkey patching  | 
 
+```
+REQUEST(EXIT);
+
+```
+
 
 	
