@@ -91,7 +91,7 @@ Breakpoints and commands to execute
 
 Wadu uses a pseudo C language so you should expect some of its quirks
 
-The language has 2 datatypes, unsigned integer and vector of bytes with an arbitrary length.
+The language has 2 data types: unsigned integer and vector of bytes of arbitrary length.
 
 ```
 $Integer=0x414243;
@@ -105,7 +105,7 @@ PRINT("Integer: ".$Integer." vector: ".$vector." Integer(8bit):".$Integer8);
 
 > Integer: 0000000000414243 vector: ABCABC Integer(8bit):43
 
-Expect all C operators for logc and arithmetic on integral values.
+Expect all C operators for logic and arithmetic with integral values.
 
 Integral type defaults to a 64 bit unsigned integer.
 
@@ -135,7 +135,7 @@ PRINT($somebytes);
 
 #### For the examples we'll assume we're working with a x86_64 machine.
 
-You can access the GP register using the <b>$$</b> syntax
+You can access the GP registers using the <b>$$</b> syntax
 
 > $$ REGISTER_NAME
 
