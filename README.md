@@ -91,7 +91,7 @@ Breakpoints and commands to execute
 
 Wadu uses a pseudo C language so you should expect some of its quirks
 
-The language has 2 data types: unsigned integer and vector of bytes of arbitrary length.
+The language has 2 data types: unsigned integral type and vector of bytes of arbitrary length.
 
 ```
 $Integer=0x414243;
@@ -105,7 +105,7 @@ PRINT("Integer: ".$Integer." vector: ".$vector." Integer(8bit):".$Integer8);
 
 > Integer: 0000000000414243 vector: ABCABC Integer(8bit):43
 
-Expect all C operators for logic and arithmetic with integral values.
+Expect all C operators for logic and arithmetic for operations with integral values.
 
 Integral type defaults to a 64 bit unsigned integer.
 
