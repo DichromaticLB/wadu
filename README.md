@@ -156,7 +156,7 @@ $$eax=5;   /* Sets the lower 32 bits of rax to 0x00000005, the upper 32 remain u
 
 ***
 
-You can read memory with <b>MEMREAD</b> and <b>AMEMREAD</b> commands, both commands use the syntax
+You can read memory with <b>MEMREAD</b> and <b>AMEMREAD</b>, both commands use the syntax
 
 
 > [A]MEMREAD '(' address_to_read ',' number_of_bytes_to_read ')'
