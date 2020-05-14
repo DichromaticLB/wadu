@@ -176,13 +176,13 @@ the values to the address where the binary it's been loaded in memory,
 distinct addresses each time they're executed. 
 
 Pointers stored in the process memory or registers
-are already adjusted and can use <b>AMEMREAD</b> with reads from absolute addresses.
+are already adjusted and can use <b>AMEMREAD</b> which reads from absolute addresses.
 
 
 ***
 
 Analogous to <b>MEMREAD</b> and <b>AMEMREAD</b> there's also <b>MEMWRITE</b> and <b>AMEMWRITE</a> whose
-addressing system is.
+syntax system is.
 
 > [A]MEMWRITE '(' address_to_write ',' newContents [',' limit ] ')'
 
@@ -196,7 +196,7 @@ AMEMWRITE($$rsp,U64(0xbadc00de));  /* Simulates a push instruction, analogous to
 
 MEMWRITE(0x817,0x9090909090); /*Replaces whatever is at 0x817 by a 5 NOP instructions, assuming is executable code and the begining of an instruction*/
 MEMWRITE(0x817,0x9090909090,2); /*Same as above but limit the ammount of  bytes to write, resulting in only 2 NOP instructions*/
-MEMWRITE(0x610,U16(0x414243444546)); /*Replaces 2 bytes at 0x610 bu 0x46 0x45*/
+MEMWRITE(0x610,U16(0x414243444546)); /*Replaces 2 bytes at 0x610 by 0x46 0x45*/
 ```
 
 ***
@@ -208,7 +208,7 @@ integral size.
 <i><b> AMEMREAD($$rsp,4) </b></i> produces a 4 byte length vector and not an unsigned integer.
 
 
-You can overcome this issue with a casts:
+You can overcome this issue with casts:
 
 > U32(AMEMREAD($$rsp,4))
 
@@ -218,7 +218,7 @@ You can overcome this issue with a casts:
 There's 2 commands for output,<b>PRINT</b> and <b>DUMP</b>.
 
 Both have identical syntax but different purpose, use PRINT to produce human readable output
-and DUMP to literally dump raw vectors of bytes.
+and DUMP to dump raw vectors of bytes, analogous to the write syscall.
 
 > (DUMP | PRINT) '(' LIST [ ',' stream ] ')'
 
@@ -240,8 +240,8 @@ If no stream is provided it defaults to stdout.
 | DUMP(AMEMREAD($$rsp,0x200).'\x00\x00',"binary"); | <Writes 512 bytes read plus 2 null bytes to stream named binary> |
 
 ***
-A quirk of the PRINT command is that if it's only given a single vector to print it will provide
-an hexdump of it instead of printing it as a C string.
+A quirk of the PRINT command is that if it's only given a single vector to print it will generate
+an hexdump instead of printing it as a C string.
 
 | COMMAND       | OUTPUT        | 
 | ------------- |:-------------:| 
@@ -416,7 +416,7 @@ generates random combinations but duplicates can happen.
 
 
 This is quite a mouthful, lets try with an example.
-#### example
+## Sequence example
 
 Lets suppose we encounter a mysterious function call at address <b>0x7c4</b>. 
 said function takes 2 arguments in registers: <b>RDI, RSI</b>
@@ -428,7 +428,7 @@ We'll borrow a piece of memory at address <b>0x900</b> for our hijinks.
 commands at address 0x7bf(Instruction before our mysterious function call):
 ```
 1)SEQUENCE("fuz",{0->0x100}{"test string 1\x00","test string 2\x00","test string 3\x00"});
-2)$backup=MEMREAD(0x900,0x10); //Backup to avoid leaving the process the program in a inconsistent state
+2)$backup=MEMREAD(0x900,0x10); //Backup to avoid corrupting memory in case of future use
 ```
 ***
 commands at address 0x7c4(Instruction where function is called):
@@ -438,13 +438,13 @@ commands at address 0x7c4(Instruction where function is called):
 5)MEMWRITE(0x900,GET("fuz",1)); //Inject string
 ```
 ***
-commands at address 0x7c9(Instruction we'll be at once function returns):
+commands at address 0x7c9(Instruction immediately after the function returns):
 ```
-6)PRINT("arg1: ".GET("fuz",0)." arg2: ".GET("fuz",1)." result: ".$$rax);
+6)PRINT("arg1: ".GET("fuz",0)." arg2: ".GET("fuz",1)." result: ".AMEMREAD($$rax,0x40));
 7)if(INCREMENT("fuz")) 
-8)	$$rip=$$rip -5; /*Jump back to instruction call wich will trigger the previous breakpoint again*/
+8)	$$rip=$$rip -5; /*Jump back to instruction call wich will trigger the previous breakpoint again with a new set of values*/
 else
-9)	MEMWRITE(0x900,$backup); /*Restored borrowed memory and carry on*/
+9)	MEMWRITE(0x900,$backup); /*Restore borrowed memory and let the process carry on*/
 ```
 ***
 
@@ -483,7 +483,7 @@ outputs:
 
 Casts reinterpret strings of bytes 
 while  discarding or padding bytes as needed.
-When promoting null bytes will used for pad.
+When promoting null bytes will be used to fill any missing data.
 This operation is architecture dependant, particularly depends on the 
 [endianess](https://en.wikipedia.org/wiki/Endianness) of the data
 
@@ -509,7 +509,8 @@ SCRIPT("commands");
 
 #### SLICE
 
-Slice allows you extract a section from vector of bytes, left is closed range and right is open
+Slice allows you extract a section from vector of bytes, left is closed range and right is open, if the begining or
+end boundaries are beyond the limits of the value it might return less data than expected.
 i.e [from , to) -> [1,4) -> 1,2,3
 
 > SLICE '(' value ',' from ',' to ')'
@@ -525,10 +526,12 @@ PRINT($slice);  /* bole */
 
 | COMMAND       | OUTPUT        | 
 | ------------- |:-------------:| 
-|DISABLEBREAK();| Disable the breakpoint at from which the commands are being executed | 
+|DISABLEBREAK();| Disable the breakpoint from which the commands are being executed | 
 |DISABLEBREAK(address);|Disable the breakpoint referenced by address | 
 |ENABLEBREAK();|Enable the breakpoint at from which the commands are being executed | 
 |ENABLEBREAK(address);|Enable the breakpoint referenced by address | 
+
+These addresses correspond to the values supplied in the configuration file
 
 #### LEN
 
@@ -542,6 +545,7 @@ PRINT(LEN(U64(1)));  /*8*/
 PRINT(LEN(U32(1)));  /*4*/
 PRINT(LEN(U16(1)));  /*2*/
 PRINT(LEN(U8(1)));   /*1*/
+PRINT(CONCAT(LEN(U32(1)).LEN(U16(1))));  /*6*/
 ```
 
 
@@ -572,7 +576,7 @@ Generate random integral types from [0 to 0xffffffffffffffff]
 
 #### MEMCMP
 
-Compares memory, will go beyond the length of the shortest value, returns true
+Compares memory, will never go beyond the length of the shortest value, returns true
 if none of the compared bytes are different. 
 
 > MEMCMP '(' val ',' val [ ',' max_bytes_to_compare ] ')'
@@ -614,18 +618,18 @@ SLEEP(1000); /*sleeps 1 second */
 
 Write to the write end of the STDIN pipe.
 
-Send more data to read by the child whenever from.
+Send more data to read by the child.
 
 > STDIN '(' value ')' ';'
  
 ```
-STDIN(AMEMREAD($$rsp,0x20)); /* Send to the child's stdin 0x20 bytes pointed by RSP at the current point*/ 
+STDIN(AMEMREAD($$rsp,0x20)); /* Send to the child's stdin 0x20 bytes pointed by its own RSP*/ 
 ```
 
 #### CLOSEIN
 
 By calling CLOSEIN the child will receive an EOF once it tries to read beyond the last byte of input instead
-of being left waiting for more input to come.
+of being left waiting for more input.
 
 ```
 CLOSEIN();
@@ -655,7 +659,7 @@ PATTERN(PATTERN('AB',2),4); /*ABABABABABABABAB*/
 #### IFDEF
 
 Test if a variable or function is defined.
-Doesnt apply for sequences
+Does not apply to sequences.
 
 > IFDEF '(' (TOKEN|value) ')'
 
@@ -682,6 +686,7 @@ Enables steping 1 instruction at a time
 
 This should be used along a handler for SIGTRAP( signal number 5), if no breakpoint is at the address
 it will attempt to call de handler for the signal number, if none is defined it will simply exit.
+See https://github.com/DichromaticLB/wadu/blob/master/README.md#Signals-object)
 
 ```
 STEPTRACE(1); /*enables step tracing*/
