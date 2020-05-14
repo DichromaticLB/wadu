@@ -697,6 +697,31 @@ Calls getchar, effectively pausing further command execution until a key is pres
 PRINT("VERY IMPORTANT MESSAGE THAT MUST NOT BE DROWNED IN A SEA OF OUTPUT"."");
 GETC();
 ```
+#### DEFUN
+
+Function definition
+
+> DEFUN TOKEN '(' tokenlist ')' construct
+
+```
+DEFUN fib(num) {
+	if($num<2)
+		1;
+	else
+		fib($num-1)+fib($num-2);
+	}
+	
+DEFUN half(number) 
+	U8($number/2);	
+	
+PRINT(U8(fib(5)).' '.half(17));
+
+```
+outputs:
+
+```
+08 08
+```
 
 #### REQUEST
 
@@ -715,9 +740,163 @@ GETC();
 |DETACH|Detach the process and leave it running, ideal if you just want to do some monkey patching  | 
 
 ```
-REQUEST(EXIT);
 
+REQUEST(EXIT);
+REQUEST(RESTART);
+REQUEST(RESET);
+REQUEST(DETACH);
 ```
 
+***
+## Configuration Parameters
 
-	
+| Name       | TYPE          | DESCRIPTION |
+| ------------- |:--------------|:------------:| 
+|Image|String|Binary image to execute|
+|Arguments| Array of strings | Command line parameters to pass to execve|
+|textAt|Integral|Offset to add to memory segments |
+|stdin |string| File to pipe into input|
+|stdout|string|File to redirect stdout to|
+|stderr|string|File to redirect stderr to|
+|stdin |object|[file io](https://github.com/DichromaticLB/wadu/blob/master/README.md#file-io)|
+|stdout|object|[file io](https://github.com/DichromaticLB/wadu/blob/master/README.md#file-io)|
+|stderr|object|[file io](https://github.com/DichromaticLB/wadu/blob/master/README.md#file-io)|
+|commands|Array of strings| Commands to execute on process start|
+|breakpoints|Array ob objects|[Breakpoint object](https://github.com/DichromaticLB/wadu/blob/master/README.md#Breakpoint-array)|
+|signals|Array of objects|[Signals object](https://github.com/DichromaticLB/wadu/blob/master/README.md#Signals-object)|
+|onexit|object| [On Exit object](https://github.com/DichromaticLB/wadu/blob/master/README.md#Exit-object)|
+
+***
+
+## file io
+
+Besides the typical file redirection there's other possible operations with the standard streams.
+
+| Name          | example       | DESCRIPTION  | stdin        | stdout  | stderr  |
+| ------------- |:--------------|:------------:|:------------:|:------------:|:------------:| 
+| DATA| "stdin":{"type":"DATA","data":"piped"}| Pipe the contents of data to child's stdin| YES | NO| NO |
+|FILE| "stdout":{"data":"filename","type":"FILE"} |Read/Write the the contents of stream from a file|YES|YES|YES|
+|PARENT_IN|"stdin":{"type":"PARENT_IN"}|Inherit the stdin from parent|YES|NO|NO|
+|PARENT_OUT|"stdout":{"type":"PARENT_OUT"}|Inherit parent stdout and redirect child to it| NO|YES|YES|
+|PARENT_ERR|"stdout":{"type":"PARENT_ERR"}|Inherit parent stderr and redirect child to it| NO|YES|YES|
+
+
+## Breakpoint array
+The breakpoint array is composed of a series of objects each representing a possible breakpoint with a series of
+commands associated to it.
+
+| param name    | type          | description  | required     |
+| ------------- |:--------------|:------------:|:------------:|
+| address| integral| The address to set the breakpoint at, as it appears in binary it's loaded from | YES|
+| commands| array of strings| A series of strings that will be executed sequentially if breakpoint is hit while active | YES|
+| enabled| boolean| Default status of the breakpoint, by default breakpoint are enabled |NO|
+
+***
+Example of possible configuration:
+
+```
+..
+.
+"breakpoints":[
+	{
+		"address":0x817,
+		"commands":[
+			"PRINT('virtual address :0x'.$$rip.' physical address: 0x817');",
+			"REQUEST(DETACH);"
+		]
+	},
+	{
+		"address":0x81c,
+		"commands":[
+			"PRINT('Didnt detach succesfully? Lets segfault happily'.'');",
+			"$$rip=0x0;"
+		]
+	}
+]
+.
+..
+```
+
+***
+
+## Signals object
+
+Whenever the child process receives a signal most of them will be propagated first to us, the default behavior in case 
+of receiving a signal is to exit.
+
+The structure of is of an array of objects, each describing the behavior for each signal number.
+
+| param name    | type          | description  | required     |
+| ------------- |:--------------|:------------:|:------------:|
+| signal| integral| The signal number to be handled | YES|
+| action| string| Possible actions to take, see [Actions](https://github.com/DichromaticLB/wadu/blob/master/README.md#Actions)| YES|
+| commands|array of strings|Identical to its counterpart in breakpoints, a series of commands to execute on signal |NO|
+| condition|array of strings|Expressions to evaluate to determine whether a certain action is to be taken, see [Actions](https://github.com/DichromaticLB/wadu/blob/master/README.md#Actions) |DEPENDS ON ACTION|
+
+***
+
+## Actions
+
+Certain objects may take an action option which can trigger a variety of effects
+
+| action name    | description  | notes        |
+| ------------- |:--------------|:------------:|
+|none |Executes any commands, if any, and continue execution | Commands are executed immediatly after the event triggers|
+|exit| Executes any commands if any and then terminates execution|Commands are executed immediatly after the event triggers|
+|restart| Restart the execution, keeping variables, functions and sequences|Commands are executed after reseting the process, before the commands array defined in [Configuration Parameters](https://github.com/DichromaticLB/wadu/blob/master/README.md#Configuration-Parameters) |
+|reset| Restart the execution, nothing is kept|commands are executed after restarting the process, before the commands array defined in [Configuration Parameters](https://github.com/DichromaticLB/wadu/blob/master/README.md#Configuration-Parameters) |
+|restartif| Will evaluate condition parameter and behave as restart if evaluates to true otherwise behaves like exit| Condition becomes a required parameter along action |
+|resetif| Will evaluate condition parameter and behave as reset if evaluates to true otherwise behaves like exit| Condition becomes a required parameter along action |
+
+***
+
+## Exit object
+
+The onexit object allows you to stop just before the process exits naturally and examine registers and memory, this behavior is enabled by default.
+
+| param name    | type          | description  | required     |
+| ------------- |:--------------|:------------:|:------------:|
+| action| string| Possible actions to take, see [Actions](https://github.com/DichromaticLB/wadu/blob/master/README.md#Actions), the action "none" is invalid in this context as exit is inevitable| YES|
+| commands|array of strings|Identical to its counterpart in breakpoints, a series of commands to execute on exit |NO|
+| condition|array of strings|Expressions to evaluate to determine whether a certain action is to be taken, see [Actions](https://github.com/DichromaticLB/wadu/blob/master/README.md#Actions) |DEPENDS ON ACTION|
+
+
+***
+
+## Example of possible onexit and signals configuration
+
+```
+.
+..
+"onexit":{
+	"action":"reset",
+	"commands":["PRINT('Reseting. RIP: 0x'.$$rip);"]
+},
+"commands":[
+	"if(!ISDEF(counter))",
+		"$counter=0;"
+	],
+"signals":[{
+	"signal":11,
+	"commands":["$counter=U8($counter+1);"],
+	"action":"restartif",
+	"condition":["$counter<5;"]
+}]
+..
+.
+```
+
+# Misc
+
+## Segments
+
+When a process is traced a map of its segments is created in the variable space.
+
+| variable name | description  |
+|------------- |:-------------:|
+|segments| the number of segments read|
+|sbegining_$i| The begining of the segment, replace $i with the index of the segment|
+|send_$i| The end of the segment, replace $i with the index of the segment|
+|sflags_$i| Flags showing whether the segment is readable/writable/executable, replace $i with the index of the segment|
+|segment_source_$i| The name of the file the segment was loaded from, if any replace $i with the index of the segment|
+
