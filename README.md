@@ -686,7 +686,7 @@ Enables steping 1 instruction at a time
 
 This should be used along a handler for SIGTRAP( signal number 5), if no breakpoint is at the address
 it will attempt to call de handler for the signal number, if none is defined it will simply exit.
-See https://github.com/DichromaticLB/wadu/blob/master/README.md#Signals-object)
+See [Signals object](https://github.com/DichromaticLB/wadu/blob/master/README.md#Signals-object)
 
 ```
 STEPTRACE(1); /*enables step tracing*/
