@@ -43,45 +43,45 @@ A small example which will spawn a process and skip a few instructions whenever 
 
 ### A small breakdown of each option
 
-
+***
 <b>image</b>
-***
+
 This is the binary to execute
-
+***
 <b>arguments</b>
-***
-This is the list of arguments to pass through execve
 
-<b>textAt</b>
+This is the list of arguments to pass through execve
 ***
+<b>textAt</b>
+
 This is the offset added when calculating addresses based on the memory segments of the process. Modern binaries are loaded at random addresses alligned to page size.
 
 When the process is loaded wadu can determine part of the virtual address from the memory maps but this offset must be provided until this software is integrated with a [Binary File Descriptor](https://en.wikipedia.org/wiki/Binary_File_Descriptor_library) library.
 
 If the executable is not PI you can skip ignore the issue set it to zero, otherwise you generally can set it to
 <b>((entry_address)&(PAGESIZE-1))</b> or just hack your way out of this issue :)
-
+***
 <b>stdin</b>
-***
+
 stdin redirection
-
+***
 <b>stdout</b>
-***
-stdout redirection
 
-<b>stderr</b>
+stdout redirection
 ***
+<b>stderr</b>
+
 	
 sterr redirection
-
-<b>commands</b>
 ***
+<b>commands</b>
+
 	
 Commands to execute once the image begins execution and after each restart
 
-
-<b>breakpoints</b>
 ***
+<b>breakpoints</b>
+
 
 Breakpoints and commands to execute 
 
