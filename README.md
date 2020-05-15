@@ -171,7 +171,7 @@ $data=MEMREAD(0x817,0x1000); //Reads 0x1000 bytes at the relative address 0x817
 
 
 The difference between <b>MEMREAD</b> and <b>AMEMREAD</b> is that  <b>MEMREAD</b> will try to adjust
-the values to the address where the binary it's been loaded in memory, 
+the addresses to allign with the virtual ones where the binary hass been loaded in memory, 
 [PIC executables](https://en.wikipedia.org/wiki/Position-independent_code) are loaded in
 distinct addresses each time they're executed. 
 
