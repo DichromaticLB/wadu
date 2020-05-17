@@ -1,6 +1,8 @@
 #include"wadu_interp.hpp"
 #include<sstream>
 #include<string.h>
+#include<unistd.h>
+#include<signal.h>
 #include"util.hpp"
 using namespace wadu;
 using namespace anjson;
@@ -90,16 +92,94 @@ bool wadu::executingManager::done() const{
 }
 
 void wadu::executingManager::handleRequests(){
-	for(auto&v:executingContexts)
+	for(auto&v:contextImages())
 		if(v->traceStatus.request!=scheduleRequestType::none)
 			v->handleRequest();
 }
 
+vector<tracingContext*>  wadu::executingManager::contextImages() {
+	vector<tracingContext*>  res;
+
+	{
+		std::lock_guard< std::mutex> m(mutex);
+		res.reserve(executingContexts.size());
+
+		for(auto& v:executingContexts)
+			res.push_back(v.get());
+
+	}
+
+	return res;
+}
+
 wadu::executingManager::executingManager(const optionMap& m){
 	this->executingContexts.emplace_back(
-			new tracingContext(executingContexts.size(),m,*this)
+			std::make_unique<tracingContext>(executingContexts.size(),m,*this)
 	);
 }
+
+void wadu::executingManager::fork (tracingContext* tc,process_child& cd){
+
+	wlog(LL::TRACE)<<"forking tracing context";
+	tracingContextPointer wrapper;
+	uint64_t cid=cd.forkPid(),tid;
+	process_child process(cid);
+	process.wait();
+
+	if(process.prepareDetach()==-1)
+		throw runtime_error("Failed to prepare forked process for "
+				"attach "+to_string(cid)+" "+strerror(errno));
+
+	if(process.detach()==-1)
+		throw runtime_error("Failed to detach forked process for "
+			"attach "+to_string(cid)+" "+strerror(errno));
+
+	if(tc->controlFlow.onFork.newConfig.empty())
+	{
+		wrapper=std::make_unique<tracingContext>(
+				executingContexts.size(),tc->source,*this);
+	}
+	else
+	{
+		auto config=anjson::fromFile(tc->controlFlow.onFork.newConfig);
+		wrapper=std::make_unique<tracingContext>(
+				executingContexts.size(),tc->source,*this);
+	}
+
+	tracingContext*child=wrapper.get();
+
+	{
+		std::lock_guard<std::mutex> guard(mutex);
+
+		executingContexts.emplace_back(move(wrapper));
+		tid=executingContexts.size()-1;
+
+	}
+
+	wlog(LL::INFO)<<"Process "+to_string(cd.id)+" spawns "+to_string(cid)+
+			" to be traced by thread id: "<<to_string(tid);
+
+
+	tc->children.emplace_back(child);
+	child->handlerId=(uint32_t)handlerNames::FORK;
+	child->parent=tc;
+	child->copy(*tc);
+	child->variables.variables["$pid"]=expression(cid,expression_actor::u64);
+	child->controlFlow.onSchedule=tc->controlFlow.onFork.childDo;
+	child->run();
+
+}
+
+void wadu::tracingContext::copy(const tracingContext&tc){
+	flags=tc.flags;
+	variables.variables=tc.variables.variables;
+	variables.functions=tc.variables.functions;
+}
+
+static  const vector<int>& defaultNoSignals(){
+	static  const vector<int> dns={ SIGSTOP,SIGTRAP,SIGCHLD};
+	return dns;
+};
 
 wadu::tracingContext::tracingContext(
 uint32_t id,
@@ -111,6 +191,9 @@ executingManager& parent):source(m),manager(parent){
 	handlerId=(uint32_t)handlerNames::DEFAULT;
 	this->parent=nullptr;
 	createBreakmap(m,controlFlow.breakpoints);
+	if(m.containsKeyType("trace",type::object)){
+		createBreakmap(m["trace"],controlFlow.trace_breakpoints);
+	}
 	reset();
 
 	if(m.containsKey("commands"))
@@ -122,6 +205,8 @@ executingManager& parent):source(m),manager(parent){
 		controlFlow.onExit=scheduleRequest(ox);
 	}
 
+
+
 	if(m.containsKeyType("signals",type::array))
 		for(auto& v:m["signals"].get<optionMap::arrayType>())
 		{
@@ -131,6 +216,11 @@ executingManager& parent):source(m),manager(parent){
 
 			controlFlow.onSignal.emplace(v["signal"].get<int64_t>(),v);
 		}
+	for(auto v:defaultNoSignals())
+		if(!controlFlow.onSignal.count(v))
+			controlFlow.onSignal[v]=scheduleRequest::donothing();
+
+
 
 	flags.traceOptions=getTraceOptions(m);
 
@@ -138,6 +228,33 @@ executingManager& parent):source(m),manager(parent){
 					m["stepTrace"].get<bool>())
 		traceStatus.stepTracing=true;
 
+	if(m.containsKeyType("onFork",type::object)){
+		auto of=m["onFork"];
+
+		if(of.containsKeyType("follow",type::booltype))
+			controlFlow.onFork.follow=of["follow"].get<bool>();
+
+		if(of.containsKeyType("child",type::object))
+		{
+			auto child=of["child"];
+
+			if(child.containsKeyType("reconfig",type::string))
+				controlFlow.onFork.newConfig=child["reconfig"].get<string>();
+
+			if(child.containsKeyType("commands",type::array))
+				controlFlow.onFork.childDo=
+						expression::buildFromJSON(child["commands"]);
+		}
+
+		if(of.containsKeyType("parent",type::object))
+		{
+			auto parent=of["parent"];
+
+			if(parent.containsKeyType("commands",type::array))
+				controlFlow.onFork.parentDo=
+						expression::buildFromJSON(parent["commands"]);
+		}
+	}
 }
 
 static vector<wadu::waduhandler>& handlers(){
@@ -154,7 +271,7 @@ uint32_t wadu::registerHandler(const waduhandler&w){
 
 void wadu::tracingContext::run(){
 	wlog(LL::TRACE)<<"starting tracing context";
-	tracee=thread(handlers()[handlerId],this,id);
+	tracee=thread(handlers().at(handlerId),this,id);
 	traceStatus.running=true;
 }
 
@@ -199,4 +316,22 @@ void wadu::tracingContext::reset(){
 	variables.variables["threadid"]=expression(id,expression_actor::u64);
 	io.name2stream["stdout"]=coutID;
 	io.name2stream["stderr"]=cerrID;
+}
+void wadu::replicateHandler::release(){
+	parentDo.tearDown();
+	childDo.tearDown();
+}
+
+void wadu::tracingContext::release(){
+	variables.functions.release();
+	controlFlow.onAttach.tearDown();
+	controlFlow.onSchedule.tearDown();
+	controlFlow.onExit.release();
+	for(auto&v:controlFlow.onSignal)
+		v.second.release();
+	for(auto&v:controlFlow.breakpoints)
+		v.second.tearDown();
+	for(auto&v:controlFlow.trace_breakpoints)
+		v.second.tearDown();
+	controlFlow.onFork.release();
 }

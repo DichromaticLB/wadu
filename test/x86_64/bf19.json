@@ -1,31 +1,47 @@
 {
 	"image":"forkbonacci",
-	"arguments":["forkbonacci","10"],
+	"arguments":["forkbonacci","6"],
 	"processes":1,
 	"textAt":0x7e0,
 	"stdin":{"type":"DATA","data":""},
 	"stdout":{"type":"PARENT_OUT"},
 	"stderr":"/dev/null",
 	"signals":[],
-	"commands":[],
+	"commands":["STEPTRACE(1);"],
 	"logLevel":"WARNING",
-	"traceOptions":["fork","stopOnExit","killonexit"],
+	"traceOptions":["fork","stopOnExit"],
+	"signals":[
+		{
+			"signal":5,
+			"commands":[],
+			"action":"none"
+		}
+	],
 	"onFork":{
 		"follow":true,
 		"child":{
 			"reconfig":"",
 			"commands":[
-				"PRINT('FROM CHILD'.'');"
 			]
 		},
 		
 		"parent":{
 			"commands":[
-				"PRINT('FROM PARENT'.'');"
+				
 			]
 		}
 	},
 	"breakpoints":[
-	
-	]
+
+	],
+	"trace":{
+		"breakpoints":[
+			{
+				"address":0x8ea,
+				"commands":[
+					"if($$rdi==3)$$rdi=1;/*fib(6)==fib(5)*/"
+				]
+			}
+		]
+	}
 }

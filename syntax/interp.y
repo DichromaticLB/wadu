@@ -215,10 +215,10 @@ close_stdin	: CLOSEIN '(' ')' {
 				$$.actor=expression_actor::closestdn;
 		}
 				
-createStream: FILE '(' STRING ',' STRING ')' {
+createStream: FILE '(' value ',' STRING ')' {
 				$$.lt.resize(2);
 				$$.actor=expression_actor::createStream;
-				$$.lt[0].vec=$3.lt[0].vec;
+				$$.lt[0].exp=new expression($3);
 				$$.lt[1].vec=$5.lt[0].vec;
 		}	
 		

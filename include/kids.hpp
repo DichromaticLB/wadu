@@ -106,7 +106,7 @@ namespace wadu{
 		int resume();
 		int detach();
 
-		void signal(int num);
+		int signal(int num);
 		void processSleep(uint64_t millis) const;
 		void stdinCloseWrite();
 		void stdinCloseRead();
@@ -115,11 +115,19 @@ namespace wadu{
 		void setOptions(uint32_t i);
 
 		uint64_t forkPid();
+		void waitForkReady();
+
+		int prepareDetach();
+		int attach();
+
+
 		uint64_t vforkPid();
 		uint64_t clonePid();
 
 
-		memaddr origin2real(memaddr mem);
+		memaddr real2virtual(memaddr mem);
+		memaddr virtual2real(memaddr mem);
+
 		string command();
 		uint64_t id;
 		string path;

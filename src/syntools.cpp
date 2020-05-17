@@ -611,7 +611,7 @@ expression wadu::expression::eval(debugContext&c) const{
 					c.child,abs?
 					address.getNum()
 					:
-					c.child.origin2real(address.getNum()),
+					c.child.real2virtual(address.getNum()),
 					count.getNum());
 			return res;
 		}
@@ -648,7 +648,7 @@ expression wadu::expression::eval(debugContext&c) const{
 			writeMemory(c.child,abs?
 					address.getNum()
 					:
-					c.child.origin2real(address.getNum()),bytes,lim);
+					c.child.real2virtual(address.getNum()),bytes,lim);
 
 			break;
 		}
@@ -843,9 +843,18 @@ expression wadu::expression::eval(debugContext&c) const{
 		}
 		case expression_actor::createStream:
 		{
-			c.openFiles.emplace_back(asString());
+			auto fnale=lt[0].exp->eval(c);
+
+			if(!fnale.isVector())
+				throw runtime_error("Cant open file with a non string as param");
+			auto filename=fnale.asString();
+
+			c.openFiles.emplace_back(filename);
 			if(!c.openFiles.back().is_open())
-				throw runtime_error("Could open file for ostream: "+asString());
+			{
+				c.openFiles.pop_back();
+				throw runtime_error("Could open file for ostream: "+filename);
+			}
 			c.streams[asString(1)]=c.openFiles.size()-1;
 			break;
 		}
@@ -959,7 +968,7 @@ expression wadu::expression::eval(debugContext&c) const{
 					default:
 					{
 						throw runtime_error(
-								"Could build sequence,"
+								"Couldn't build sequence,"
 								" invalid expression actor");
 					}
 				}
@@ -1362,7 +1371,6 @@ void wadu::debugContext::applyBreakpointChanges(memaddr faddr){
 	wadu::wlog(wadu::LL::DEBUG)<<"Applying breakpoint changes ";
 	for(auto& br:breakpointActions)
 	{
-
 		if(br.action==breakpointAction::action::clear_this)
 			br.target=faddr;
 
@@ -1405,6 +1413,11 @@ void wadu::debugContext::mapMemoryMaps(){
 
 		index++;
 	}
+}
+
+void wadu::debugContext::miscVariables(uint64_t threadId){
+	(*variables)["pid"]=expression(child.id,expression_actor::u64);
+	(*variables)["thread"]=expression(threadId,expression_actor::u64);
 }
 
 void wadu::debugContext::updates(){

@@ -14,6 +14,8 @@
 #include<random>
 #include<string_view>
 #include<fstream>
+#include<mutex>
+#include<memory>
 
 namespace wadu{
 	struct expression;
@@ -269,6 +271,7 @@ namespace wadu{
 		const exprfunction& operator[](const string&s) const;
 		void put(const string&name,const expression& params,
 				const expression&exec);
+		void release();
 
 		unordered_map<string,exprfunction> fns;
 	};
@@ -277,24 +280,39 @@ namespace wadu{
 	struct scheduleRequest{
 		scheduleRequest();
 		scheduleRequest(const optionMap&m);
+		void release();
+
+		static scheduleRequest donothing();
+
 		scheduleRequestType t;
 		expression condition;
 		expression commands;
 	};
 
-	using msignal=unordered_map<int,scheduleRequest>;
+	struct replicateHandler{
+		bool follow=false;
+		string newConfig="";
+		expression parentDo;
+		expression childDo;
 
+		void release();
+	};
+
+	using msignal=unordered_map<int,scheduleRequest>;
+	using tracingContextPointer=std::unique_ptr<tracingContext>;
 	struct tracingContext;
 	struct executingManager{
-		void fork (int childId);
-		void vfork(int childId);
-		void clone(int childId);
-		void execv(int childId);
+		void fork(tracingContext* tc, process_child& cd);
+		void vfork(tracingContext* tc,process_child& cd);
+		void clone(tracingContext* tc,process_child& cd);
+		void execv(tracingContext* tc,process_child& cd);
 		bool done() const;
 		void handleRequests();
+		vector<tracingContext*>  contextImages();
 
 		executingManager(const optionMap& m);
-		vector<tracingContext*> executingContexts;
+		vector<tracingContextPointer> executingContexts;
+		std::mutex mutex;
 	};
 
 	struct tracingContext{
@@ -304,13 +322,14 @@ namespace wadu{
 		static const uint32_t cerrID=0xfffffffe;
 
 		tracingContext(uint32_t id,const optionMap& m,executingManager& parent);
-
 		void run();
 		bool done() const ;
 		void handleRequest();
 		void reset();
+		void release();
+		void copy(const tracingContext&tc);
 
-		const optionMap& source;
+		const optionMap source;
 		executingManager& manager;
 		uint32_t id,handlerId;
 		thread tracee;
@@ -338,6 +357,8 @@ namespace wadu{
 			scheduleRequest onExit;
 			msignal onSignal;
 			commandMap breakpoints;
+			commandMap trace_breakpoints;
+			replicateHandler onFork;
 		} controlFlow;
 
 		struct {
@@ -362,6 +383,7 @@ namespace wadu{
 	{
 		void applyBreakpointChanges(memaddr);
 		void mapMemoryMaps();
+		void miscVariables(uint64_t threadId);
 		void updates();
 
 		breaker& breakpoints;
@@ -373,6 +395,8 @@ namespace wadu{
 		vector<ofstream>& openFiles;
 		seqMap& sequences;
 		const commandMap& commands;
+		const commandMap& strace_commands;
+		const replicateHandler& onFork;
 		funmap& functions;
 		bool& stepTrace;
 

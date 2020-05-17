@@ -223,4 +223,18 @@ else
 fi
 
 
+out="$(./wadu -f bf18.json)"
+if [[ "$(echo "$out"|grep -c 'FROM CHILD' )" != "54" ]] ||  [[ "$(echo "$out"|grep -c 'FROM PARENT' )" != "54" ]] || [[ "$(echo "$out"|grep -c '55' )" != 1 ]]; then
+	fatal "child processes"
+else
+	suc "child processes"
+fi
+
+if [[ "$(./wadu -f bf19.json)" != "5" ]];then
+	fatal "forked process edition"
+else
+	suc "forked process edition"
+fi
+
+
 cleanup

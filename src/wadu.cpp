@@ -10,7 +10,7 @@ const std::string defaultds="input.json";
 void help(){
 	using namespace std;
 	cout<<"wadu - reverse engineering and binary instrumentation tool"<<endl;
-	cout<<"	usage: wadu [-f filename] [-e expression] [-h]"<<endl;
+	cout<<"	usage: wadu [-f filename] [-e expression] [ -l loging level] [-h]"<<endl;
 	cout<<"	by default tries to read its configuration from "<<defaultds<<endl;
 	cout<<"Version: "<<MAJORNUM<<"."<<MINORNUM<<endl;
 	exit(0);
@@ -25,6 +25,7 @@ void dummy(std::istream& i){
 	breaker dummybreaker(dummychild,dummymemseg);
 	stream_map dummymap;
 	commandMap dummycm;
+	replicateHandler handler;
 	varmap vm;
 	vector<ofstream> o;
 	seqMap s;
@@ -42,6 +43,8 @@ void dummy(std::istream& i){
 			.openFiles=o,
 			.sequences=s,
 			.commands=dummycm,
+			.strace_commands=dummycm,
+			.onFork=handler,
 			.functions=f,
 			.stepTrace=st,
 
@@ -133,6 +136,9 @@ int main(int argc,char **argv) {
 				wlog(LL::CRITICAL)<<"Couldn't read a valid configuration, exiting";
 				exit(-1);
 			}
+			if(o.containsKeyType("logLevel",anjson::type::string))
+				wlog::setLevel(o["logLevel"].get<string>());
+
 
 			executingManager m(o);
 			m.executingContexts[0]->run();

@@ -171,18 +171,18 @@ $data=MEMREAD(0x817,0x1000); //Reads 0x1000 bytes at the relative address 0x817
 
 
 The difference between <b>MEMREAD</b> and <b>AMEMREAD</b> is that  <b>MEMREAD</b> will try to adjust
-the addresses to allign with the virtual ones where the binary hass been loaded in memory, 
+the values to the address where the binary it's been loaded in memory, 
 [PIC executables](https://en.wikipedia.org/wiki/Position-independent_code) are loaded in
 distinct addresses each time they're executed. 
 
 Pointers stored in the process memory or registers
-are already adjusted and can use <b>AMEMREAD</b> which reads from absolute addresses.
+are already adjusted and can use <b>AMEMREAD</b> with reads from absolute addresses.
 
 
 ***
 
-Analogous to <b>MEMREAD</b> and <b>AMEMREAD</b> there's also <b>MEMWRITE</b> and <b>AMEMWRITE</b> whose
-syntax system is.
+Analogous to <b>MEMREAD</b> and <b>AMEMREAD</b> there's also <b>MEMWRITE</b> and <b>AMEMWRITE</a> whose
+addressing system is.
 
 > [A]MEMWRITE '(' address_to_write ',' newContents [',' limit ] ')'
 
@@ -196,7 +196,7 @@ AMEMWRITE($$rsp,U64(0xbadc00de));  /* Simulates a push instruction, analogous to
 
 MEMWRITE(0x817,0x9090909090); /*Replaces whatever is at 0x817 by a 5 NOP instructions, assuming is executable code and the begining of an instruction*/
 MEMWRITE(0x817,0x9090909090,2); /*Same as above but limit the ammount of  bytes to write, resulting in only 2 NOP instructions*/
-MEMWRITE(0x610,U16(0x414243444546)); /*Replaces 2 bytes at 0x610 by 0x46 0x45*/
+MEMWRITE(0x610,U16(0x414243444546)); /*Replaces 2 bytes at 0x610 bu 0x46 0x45*/
 ```
 
 ***
@@ -891,6 +891,48 @@ The onexit object allows you to stop just before the process exits naturally and
 .
 ```
 
+## Forking
+
+It's possible to add forked copies of the process to the tracees, these copy the configuration of the parent but not
+its current variables,function and sequences, the structure that governs the behavior on forks is:
+
+
+| param name    | type          | description  | required     |
+| ------------- |:--------------|:------------:|:------------:|
+| follow| boolean |whether or not follow forked processes|yes|
+|child|object, see [Child and parent on fork](https://github.com/DichromaticLB/wadu/blob/master/README.md#Child-and-parent-on-fork)|behavior of the child|yes|
+|parent|object, see [Child and parent on fork](https://github.com/DichromaticLB/wadu/blob/master/README.md#Child-and-parent-on-fork)|behavior of the parent|yes|
+
+### Child and parent on fork
+
+| param name    | type          | description  | required     | child only   | parent only     |
+| ------------- |:--------------|:------------:|:------------:|:------------:|:------------:|
+|commands|array| array of comands to run, for the child i'll be run after its forked|no|NO|NO|
+|reconfig|string|new json file to read a configuration from|no|YES|NO|
+
+***
+example:
+```
+..
+.
+"onFork":{
+	"follow":true,
+	"child":{
+		"reconfig":"newConf.json",
+		"commands":[
+			"PRINT('new child '.$pid.' handled in thread num:'.$thread);"
+		]
+	},
+	"parent":{
+		"commands":[
+			"PRINT('forking child at address:0x'.$$rip);"
+		]
+	}
+	
+},
+..
+.
+```
 # Misc
 
 ## Segments
@@ -904,4 +946,11 @@ When a process is traced a map of its segments is created in the variable space.
 |send_$i| The end of the segment, replace $i with the index of the segment|
 |sflags_$i| Flags showing whether the segment is readable/writable/executable, replace $i with the index of the segment|
 |segment_source_$i| The name of the file the segment was loaded from, if any replace $i with the index of the segment|
+
+## Other
+
+| variable name | description  |
+|------------- |:-------------:|
+|pid|pid of process|
+|thread|id of the thread|
 

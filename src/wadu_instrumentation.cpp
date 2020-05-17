@@ -38,7 +38,7 @@ static uint8_t trap[]={0x00,0x7d,0x20,0xd4};
 }
 
 wadu::word wadu::breaker::textWord(memaddr addr){
-	wadu::memaddr vaddr=child.origin2real(addr);
+	wadu::memaddr vaddr=child.real2virtual(addr);
 
 	wadu::word original=ptrace(PTRACE_PEEKDATA,child.id,
 			vaddr,0);
@@ -58,7 +58,7 @@ wadu::word wadu::breaker::textWord(memaddr addr){
 
 
 wadu::memaddr wadu::breaker::addBreakpoint(memaddr addr){
-	wadu::memaddr vaddr=child.origin2real(addr);
+	wadu::memaddr vaddr=child.real2virtual(addr);
 	if(!isEnabledVirt(vaddr)){
 		file2virt[addr]=vaddr;
 		virt2file[vaddr]=addr;
@@ -242,25 +242,33 @@ void wadu::breaker::restore_from_segment(memaddr addr){
 }
 
 
-void  wadu::breaker::cont(){
-	ptrace(PTRACE_CONT,child.id,0,0);
+long int  wadu::breaker::cont(){
+	long int res=child.resume();
+	if(res==-1)
+		throw runtime_error("Failed to resume, child:"+
+				to_string(child.id)+" "+strerror(errno));
+	return res;
 
 }
 
-void wadu::breaker::step(){
-	ptrace(PTRACE_SINGLESTEP,child.id,0,0);
+long int   wadu::breaker::step(){
+	long int res=ptrace(PTRACE_SINGLESTEP,child.id,0,0);
+	if(res==-1)
+		throw runtime_error("Failed to step child:"+
+				to_string(child.id)+" "+strerror(errno));
+	return res;
 }
 
 
 
 wadu::word wadu::breaker::readRel(uint64_t addr){
 	return ptrace(PTRACE_PEEKDATA,child.id,
-			child.origin2real(addr),0);
+			child.real2virtual(addr),0);
 }
 
 void wadu::breaker::writeRel(uint64_t addr,wadu::word d){
 	if(ptrace(PTRACE_POKEDATA,child.id,
-			child.origin2real(addr),d))
+			child.real2virtual(addr),d))
 		throw runtime_error("Failed to write to "+to_string(addr));
 }
 
@@ -270,7 +278,9 @@ uint32_t wadu::breaker::breakpointSize() const{
 
 wadu::userRegisters wadu::getRegisters(process_child& child){
 	wadu::userRegisters r;
-	getRegisters(child,r);
+	if(getRegisters(child,r)==-1)
+		throw runtime_error("Failed to get registers for child "
+				+to_string(child.id)+" "+strerror(errno));
 	return r;
 }
 
@@ -387,6 +397,11 @@ void wadu::funmap::put(
 
 }
 
+void wadu::funmap::release(){
+	for(auto&v:fns)
+		v.second.code.tearDown();
+}
+
 wadu::scheduleRequest::scheduleRequest(){
 	t=scheduleRequestType::exit;
 }
@@ -413,7 +428,18 @@ wadu::scheduleRequest::scheduleRequest(const optionMap&m):scheduleRequest(){
 		commands=expression::buildFromJSON(m["commands"]);
 	}
 }
+void wadu::scheduleRequest::release(){
+	condition.tearDown();
+	commands.tearDown();
+}
 
+wadu::scheduleRequest wadu::scheduleRequest::donothing(){
+	scheduleRequest res;
+	res.t=scheduleRequestType::none;
+	return res;
+
+
+}
 
 wadu::regMapping::regMapping():type(REGISTER_TYPE::REGISTER_TYPE_8BIT){
 	addr=nullptr;

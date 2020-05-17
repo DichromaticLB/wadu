@@ -75,8 +75,8 @@ namespace wadu{
 		//From file address
 		bool isEnabledSeg(memaddr m) const;
 
-		void cont();
-		void step();
+		long int   cont();
+		long int   step();
 
 		word readRel(uint64_t addr);
 		void writeRel(uint64_t addr,word d);

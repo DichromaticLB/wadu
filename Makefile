@@ -2,10 +2,10 @@ MAJOR= $(shell cat version| head -n 1)
 MINOR= $(shell cat version| tail -n 1)
 
 ARCH=X86_64
-#LINK=SHARED
+LINK=SHARED
 
 #ARCH= AARCH64
-LINK=STATIC
+#LINK=STATIC
 
 CXX_AARCH64 = aarch64-linux-gnu-g++
 CXX_X86_64 = x86_64-linux-gnu-g++

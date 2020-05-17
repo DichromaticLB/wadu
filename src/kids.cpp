@@ -98,7 +98,7 @@ wadu::process_io::process_io(const anjson::jsonobject& o):process_io(){
 
 	if(o.getType()==type::object){
 
-		if(o.query("\"this\"[\"flags\"]").getType()==type::array){
+		if(o.containsKeyType("flags",type::array)){
 			flags=0;
 			for(auto& flag:o["flags"].get<jsonobject::arrayType>()){
 				if(flag.getType()==type::string)
@@ -107,12 +107,14 @@ wadu::process_io::process_io(const anjson::jsonobject& o):process_io(){
 			}
 		}
 
-		if(o.query("\"this\"[\"type\"]").getType()==type::string){
+		if(o.containsKeyType("type",type::string)){
 			string mode=o.query("\"this\"[\"type\"]").get<string>();
+			if(!s2type.count(mode))
+				throw runtime_error("Invalid io type: "+mode);
 			t=s2type.at(mode);
 		}
 
-		if(o.query("\"this\"[\"data\"]").getType()==type::string){
+		if(o.containsKeyType("data",type::string)){
 			string data=o.query("\"this\"[\"data\"]").get<string>();
 			this->data=data;
 		}
@@ -439,6 +441,8 @@ wadu::linux_memory_maps::linux_memory_maps(const string& file){
 }
 
 wadu::linux_memory_segment& wadu::linux_memory_maps::getFirstExec(const string& s){
+	wlog(LL::TRACE)<<"Seeking executable segment loaded from: "+s;
+
 	for(auto& segment:segments){
 		if(segment.x&& segment.file.find(s)!=string::npos)
 			return segment;
@@ -483,12 +487,9 @@ int wadu::process_child::resume(){
 	return ptrace(PTRACE_CONT,id,0,0);
 }
 
-int wadu::process_child::detach(){
-	return ptrace(PTRACE_DETACH,id,0,0);
-}
 
-void wadu::process_child::signal(int num){
-	kill(id,num);
+int wadu::process_child::signal(int num){
+	return kill(id,num);
 }
 
 void wadu::process_child::processSleep(uint64_t millis) const{
@@ -539,15 +540,45 @@ void wadu::process_child::setOptions(uint32_t i){
 	if(i&(word)traceRequest::stopOnExit)
 		flags|=PTRACE_O_TRACEEXIT;
 
-	ptrace(PTRACE_SETOPTIONS,id,0,flags);
+	if(ptrace(PTRACE_SETOPTIONS,id,0,flags)==-1)
+		throw runtime_error("Failed to set flags for process "
+				+to_string(id)+" "+strerror(errno));
 	wadu::wlog(wadu::LL::DEBUG)<<"ptrace options set: "<<flags;
 }
 
-
-wadu::memaddr wadu::process_child::origin2real(memaddr mem){
-	return textAt+mem-textOrigin;
+uint64_t wadu::process_child::forkPid(){
+	wadu::word result;
+	if(ptrace(PTRACE_GETEVENTMSG,id,0,&result)==-1)
+		throw runtime_error("Faied to get forked child pid from parent "
+				+to_string(id));
+	return result;
 }
 
+void wadu::process_child::waitForkReady(){
+	auto w=wait();
+	if(w.source!=STOP_SOURCE::STOP_SOURCE_SIGNAL||w.signum()!=SIGSTOP)
+		throw runtime_error("Error, didnt receive sigtrap while "
+				"waiting forked process to be ready");
+}
+
+int  wadu::process_child::prepareDetach(){
+	return signal(SIGSTOP);
+}
+
+int wadu::process_child::detach(){
+	return ptrace(PTRACE_DETACH,id,0,0);
+}
+
+int  wadu::process_child::attach(){
+	return ptrace(PTRACE_ATTACH,id,0,0);
+}
+
+wadu::memaddr wadu::process_child::real2virtual(memaddr mem){
+	return textAt+mem-textOrigin;
+}
+wadu::memaddr wadu::process_child::virtual2real(memaddr mem){
+	return mem-textAt+textOrigin;
+}
 
 ostream& wadu::operator<<(ostream&o,const wadu::linux_memory_segment& v){
 	o<<hex<<v.begin<<"-"<<hex<<v.end<<" r:"<<v.r

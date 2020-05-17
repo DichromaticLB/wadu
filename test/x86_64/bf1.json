@@ -9,11 +9,11 @@
 	"stderr":"/dev/null",
 	"commands":[],
 	"breakpoints":[
-	{
-		"address":0x817,
-		"commands":[
-			"$$rip=$$rip+30; /*Skip to main epilogue*/"
-		]
-	}	
+		{
+			"address":0x817,
+			"commands":[
+				"$$rip=$$rip+30; /*Skip to main epilogue*/"
+			]
+		}	
 	]
 }
