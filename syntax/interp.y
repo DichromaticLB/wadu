@@ -26,7 +26,7 @@ using namespace std;
 %token MEMWRITE CONCAT DUMP SCRIPT BREAK SLICE EXEC DO AMEMORY AMEMWRITE
 %token DISABLEBREAK ENABLEBREAK	 STATUSBREAK LEN SLEFT SRIGHT RANDOM RANDOMSEQ
 %token MEMCMP SYSTEM STDIN CLOSEIN	SLEEP SIGNAL PATTERN ISDEF DEFUN STEPTRACE 
-%token GETC REQUEST DETACH EXIT RESTART RESET
+%token GETC REQUEST DETACH EXIT RESTART RESET SYSCALLNAME TOSTRING CLOSE
 %token IF ELSE WHILE
 %token EQ NEQ GEQ LEQ LAND LOR
   
@@ -61,6 +61,7 @@ statement:  %empty
 	| _return
 	| write_memory
 	| createSequence
+	| close
 	| randomize_sequence
 	| createStream
 	| breakpoint_control
@@ -220,7 +221,13 @@ createStream: FILE '(' value ',' STRING ')' {
 				$$.actor=expression_actor::createStream;
 				$$.lt[0].exp=new expression($3);
 				$$.lt[1].vec=$5.lt[0].vec;
-		}	
+		}
+			
+close: CLOSE '(' value ')' {
+				$$.lt.resize(1);
+				$$.actor=expression_actor::close;
+				$$.lt[0].exp=new expression($3);
+		}			
 		
 signal: SIGNAL '(' value ')' {
 				$$.actor=expression_actor::_signal;
@@ -438,15 +445,28 @@ arith: NUMBER
 		                    $$.actor=expression_actor::status_breakpoint;
 	                        $$.lt.clear();
 		                    $$.lt.resize(1);
-			                $$.lt[0].exp=new expression($2);
-			              }  
+			                $$.lt[0].exp=new expression($3);
+   							 }  
+   	| TOSTRING '(' value ')'  {
+      $$.actor=expression_actor::tostring;
+      $$.lt.clear();
+      $$.lt.resize(1);
+      $$.lt[0].exp=new expression($3);
+   							 }  
 	| TOKEN '(' stringlist ')' {
 							$$.lt.clear();
 							$$.lt.resize(2);
 							$$.actor= expression_actor::funcall;
 							$$.lt[0].vec=$1.lt[0].vec;  
 							$$.lt[1].exp=new expression($3);  
-	}              
+	}  
+	| TOKEN '('  ')' {
+							$$.lt.clear();
+							$$.lt.resize(2);
+							$$.actor= expression_actor::funcall;
+							$$.lt[0].vec=$1.lt[0].vec;  
+							$$.lt[1].exp=new expression();  
+	}                 
 	| MEMCMP '(' arith ',' arith ')' {
 							$$.lt.clear();
 							$$.lt.resize(2);
@@ -467,6 +487,11 @@ arith: NUMBER
 							$$.actor=expression_actor::random;
 							$$.lt.clear();
 						}
+	| SYSCALLNAME '(' value ')'	{
+							$$.actor=expression_actor::sysname;
+							$$.lt.resize(1);
+							$$.lt[0].exp=new expression($3);
+						}			
 	| RANDOM '(' value ',' value ')' {
 							$$.actor=expression_actor::random;
 							$$.lt.resize(2);

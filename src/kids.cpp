@@ -693,3 +693,19 @@ cleanup:
 
 	return res;
 }
+
+
+
+const std::string& wadu::syscall_name(uint32_t id){
+	static const vector<string> syscalls={
+#include"syscalls_naming.hpp"
+	};
+	static const string uk="unknown";
+
+	if(id>syscalls.size())
+		return uk;
+
+	return syscalls[id];
+
+}
+

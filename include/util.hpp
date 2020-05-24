@@ -72,6 +72,10 @@ namespace wadu{
 		LL level;
 		static LL currentLevel;
 	};
+
+
+	const std::string& syscall_name(uint32_t id);
+
 }
 
 #endif

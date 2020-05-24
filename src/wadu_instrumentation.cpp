@@ -278,26 +278,28 @@ uint32_t wadu::breaker::breakpointSize() const{
 
 wadu::userRegisters wadu::getRegisters(process_child& child){
 	wadu::userRegisters r;
-	if(getRegisters(child,r)==-1)
-		throw runtime_error("Failed to get registers for child "
-				+to_string(child.id)+" "+strerror(errno));
+	getRegisters(child,r);
 	return r;
 }
 
 int wadu::getRegisters(process_child& child,userRegisters& r){
-
+	int res;
 #ifdef __x86_64__
-	return ptrace(PTRACE_GETREGS,child.id,0,&r.user);
+	 res=ptrace(PTRACE_GETREGS,child.id,0,&r.user);
 #elif defined(__aarch64__)
 	struct iovec v={
 			.iov_base=&r.user,
 			.iov_len=sizeof(r.user)
 	};
 
-	return ptrace(PTRACE_GETREGSET,child.id,NT_PRSTATUS,&v);
+	res=ptrace(PTRACE_GETREGSET,child.id,NT_PRSTATUS,&v);
 #else
 	static_assert(false,"Invalid Architecture");
 #endif
+	if(res==-1)
+			throw runtime_error("Failed to get registers for child "
+					+to_string(child.id)+" "+strerror(errno));
+	return res;
 }
 
 int wadu::setRegisters(const process_child& child,const userRegisters& r){

@@ -4,6 +4,7 @@
 #include<cstring>
 #include<sstream>
 #include<algorithm>
+#include<vector>
 #include"util.hpp"
 const std::string defaultds="input.json";
 
@@ -75,10 +76,11 @@ void dummy(std::istream& i){
 }
 wadu::LL wadu::wlog::currentLevel=wadu::LL::ERROR;
 
+
+
 int main(int argc,char **argv) {
 		using namespace wadu;
 		using namespace std;
-
 		string dataSource=defaultds;
 		stringstream evals;
 		int option;

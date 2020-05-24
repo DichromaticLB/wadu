@@ -45,6 +45,7 @@ MEMWRITE   {return waduInterp::token_type::MEMWRITE;}
 AMEMREAD   {return waduInterp::token_type::AMEMORY;}
 AMEMWRITE  {return waduInterp::token_type::AMEMWRITE;}
 FILE       {return waduInterp::token_type::FILE;}
+CLOSE       {return waduInterp::token_type::CLOSE;}
 MAPFROM    {return waduInterp::token_type::MAPFROM;}
 SEQUENCE   {return waduInterp::token_type::SEQUENCE;}
 INCREMENT  {return waduInterp::token_type::INCREMENT;}
@@ -75,6 +76,8 @@ DETACH      {return waduInterp::token_type::DETACH  ;}
 EXIT        {return waduInterp::token_type::EXIT    ;}
 RESTART     {return waduInterp::token_type::RESTART ;}
 RESET       {return waduInterp::token_type::RESET   ;}
+SYSCALLNAME {return waduInterp::token_type::SYSCALLNAME;}
+TOSTRING    {return waduInterp::token_type::TOSTRING;}
 
 if     {return waduInterp::token_type::IF;} 
 else   {return waduInterp::token_type::ELSE;}

@@ -41,6 +41,7 @@ expression& wadu::expression::operator=(const string& s){
 	lt.resize(1);
 	lt[0].vec.clear();
 	lt[0].vec.insert(lt[0].vec.begin(),s.begin(),s.end());
+	actor=expression_actor::vector;
 	return *this;
 }
 
@@ -805,6 +806,7 @@ expression wadu::expression::eval(debugContext&c) const{
 					}
 			}
 			(*d)<<endl;
+			d->flush();
 			break;
 		}
 		case expression_actor::dump:
@@ -839,6 +841,7 @@ expression wadu::expression::eval(debugContext&c) const{
 						throw runtime_error("Cant dump invalid type "+(char)actor);
 					}
 			}
+			d->flush();
 			break;
 		}
 		case expression_actor::createStream:
@@ -849,7 +852,7 @@ expression wadu::expression::eval(debugContext&c) const{
 				throw runtime_error("Cant open file with a non string as param");
 			auto filename=fnale.asString();
 
-			c.openFiles.emplace_back(filename);
+			c.openFiles.emplace_back(filename,ios::binary);
 			if(!c.openFiles.back().is_open())
 			{
 				c.openFiles.pop_back();
@@ -1362,6 +1365,47 @@ expression wadu::expression::eval(debugContext&c) const{
 			c.interpRequest=(commandRequest)getNum();
 			break;
 		}
+		case expression_actor::sysname:
+		{
+			expression res;
+			auto v=lt[0].exp->eval(c);
+			res=syscall_name(v.getNum());
+			return res;
+		}
+		case expression_actor::tostring:
+		{
+			expression res;
+			auto v=lt[0].exp->eval(c);
+			if(v.isNum())
+				res=hexstr(v.getNum());
+			else
+			{
+				stringstream ss;
+				for(auto vv:v.getVec())
+					ss<<setfill('0')<<setw(2)<<hex<<(int)vv<<" ";
+				res=ss.str();
+			}
+			return res;
+		}
+		case expression_actor::close:
+		{
+			expression res;
+			auto v=lt[0].exp->eval(c);
+			if(!v.isVector())
+				throw runtime_error("Cant close stream with a non string");
+
+			if(!c.streams.count(v.asString()))
+				throw runtime_error("Unknown stream "+v.asString());
+
+			uint32_t dex=c.streams.at(v.asString());
+
+			c.openFiles[dex].close();
+			if(c.openFiles.size()==dex-1)
+				c.openFiles.pop_back();
+
+			c.streams.erase(v.asString());
+			return res;
+		}
 	}
 
 	return expression();
@@ -1418,6 +1462,9 @@ void wadu::debugContext::mapMemoryMaps(){
 void wadu::debugContext::miscVariables(uint64_t threadId){
 	(*variables)["pid"]=expression(child.id,expression_actor::u64);
 	(*variables)["thread"]=expression(threadId,expression_actor::u64);
+	(*variables)["spid"]=to_string(child.id);
+	(*variables)["sthread"]=to_string(threadId);
+
 }
 
 void wadu::debugContext::updates(){

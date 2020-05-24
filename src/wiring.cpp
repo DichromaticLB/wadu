@@ -9,6 +9,8 @@
 using namespace std;
 using namespace wadu;
 
+
+
 static bool handlerBreak(wadu::debugContext& ctx){
 
 	if(ctx.breakpoints.virt2file.count(breakPointAt(ctx.regs,
@@ -276,6 +278,7 @@ static inline void handleStop(
 			break;
 		case STOP_SOURCE::STOP_SOURCE_SIGNAL:
 		{
+			getRegisters(ctx.child,ctx.regs);
 			if(why.signum()==SIGTRAP)
 				handleSigtrap(id,why,request,tc,ctx);
 			else
@@ -353,7 +356,7 @@ void wadu::registerDefaultHandler(){
 					};
 
 				ctx.stepTrace=tc->traceStatus.stepTracing;
-
+				getRegisters(ctx.child,ctx.regs);
 				if(m.query("\"this\"[\"seed\"]").getType()==type::integer)
 					ctx.rngSrc.seed(m["seed"].get<uint64_t>());
 				else
@@ -377,7 +380,6 @@ void wadu::registerDefaultHandler(){
 				while(true){
 					scheduleRequest request; //This defaults to exit!
 					auto why=child.wait();
-					getRegisters(ctx.child,ctx.regs);
 					handleStop(id,why,request,tc,ctx);
 
 					if(ctx.handlingRequired){
@@ -469,7 +471,7 @@ void wadu::registerForkHandler(){
 					.handlingRequired=false,
 					.interpRequest=commandRequest::none
 				};
-
+			getRegisters(ctx.child,ctx.regs);
 			ctx.stepTrace=tc->traceStatus.stepTracing;
 
 			if(m.query("\"this\"[\"seed\"]").getType()==type::integer)
@@ -495,7 +497,6 @@ void wadu::registerForkHandler(){
 			while(true){
 				scheduleRequest request; //This defaults to exit!
 				auto why=child.wait();
-				getRegisters(ctx.child,ctx.regs);
 				handleStop(id,why,request,tc,ctx);
 
 				if(ctx.handlingRequired){
