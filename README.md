@@ -181,7 +181,7 @@ are already adjusted and can use <b>AMEMREAD</b> with reads from absolute addres
 
 ***
 
-Analogous to <b>MEMREAD</b> and <b>AMEMREAD</b> there's also <b>MEMWRITE</b> and <b>AMEMWRITE</a> whose
+Analogous to <b>MEMREAD</b> and <b>AMEMREAD</b> there's also <b>MEMWRITE</b> and <b>AMEMWRITE</b> whose
 addressing system is.
 
 > [A]MEMWRITE '(' address_to_write ',' newContents [',' limit ] ')'
